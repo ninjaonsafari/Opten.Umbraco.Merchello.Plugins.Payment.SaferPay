@@ -18,6 +18,11 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 			get { return "PayComplete"; }
 		}
 
+		public static string ExtendedDataKey
+		{
+			get { return "OPTEN_SaferPayProviderSettings"; }
+		}
+
 		public const string Name = "SaferPay";
 		public const string Key = "da27fd6f-a314-47dc-8bed-c28f011c9855";
 		public const string Description = "SaferPay Payment Provider";

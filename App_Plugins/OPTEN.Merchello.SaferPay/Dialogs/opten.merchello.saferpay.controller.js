@@ -7,7 +7,7 @@
 
 	function gatewayProviderController($scope) {
 		var vm = this,
-			settingsKey = "OPTEN_TaxAndRoundingProviderSettings"; // Way to get from C#?
+			settingsKey = "OPTEN_SaferPayProviderSettings"; // Way to get from C#?
 
 		vm.wasFormSubmitted = false;
 		vm.settings = {};

@@ -1,30 +1,29 @@
 ﻿using com.saferpay.Client;
-
 using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
-
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Models;
 using System;
 using System.Web;
-
 using Umbraco.Core;
-
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
 namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 {
 	public class SaferPayPaymentProcessor
 	{
-		public MessageFactory messageFactory;
+		public MessageFactory _messageFactory;
+		public SaferPayProcessorSettings _settings;
 
-		public SaferPayPaymentProcessor(string configPath = null)
+		public SaferPayPaymentProcessor(SaferPayProcessorSettings settings)
 		{
-			messageFactory = new MessageFactory();
-			messageFactory.Open(SaferPayConstants.Config);
+			_messageFactory = new MessageFactory();
+			_messageFactory.Open(SaferPayConstants.Config);
+			_settings = settings;
 		}
 
 		public MessageObject VerifyResponse(string data, string signature)
 		{
-			return messageFactory.VerifyPayConfirm(data, signature);
+			return _messageFactory.VerifyPayConfirm(data, signature);
 		}
 
 		public string GetPostUrl(IInvoice invoice, IPayment payment)
@@ -46,10 +45,13 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 		/// Get the absolute base URL for this website
 		/// </summary>
 		/// <returns></returns>
-		private static string GetWebsiteUrl(string actionName, Guid invoiceKey, Guid paymentKey)
+		public string GetWebsiteUrl(string actionName, Guid invoiceKey, Guid paymentKey)
 		{
 			var url = HttpContext.Current.Request.Url;
 			var baseUrl = String.Format("{0}://{1}{2}", url.Scheme, url.Host, url.IsDefaultPort ? "" : ":" + url.Port);
+
+			if (string.IsNullOrEmpty(actionName) || invoiceKey.Equals(Guid.Empty) || paymentKey.Equals(Guid.Empty))
+				return baseUrl;
 
 			baseUrl += SaferPayConstants.Api.BaseUrl;
 			baseUrl += actionName;
@@ -83,8 +85,8 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 			payment.ExtendedData.SetValue(SaferPayConstants.MessageAttributes.Token, id);
 
 			// Complete order for saferpay
-			MessageObject payComplete = messageFactory.CreateRequest(SaferPayConstants.PayCompleteKey);
-			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, "99867-94913159");
+			MessageObject payComplete = _messageFactory.CreateRequest(SaferPayConstants.PayCompleteKey);
+			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, _settings.AccountId);
 			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.Id, id);
 			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.Token, token);
 			MessageObject payCompleteResult = payComplete.Capture();
@@ -127,8 +129,8 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 			if (invoice == null || payment == null)
 				return null;
 
-			MessageObject pay = messageFactory.CreatePayInit();
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, "99867-94913159");
+			MessageObject pay = _messageFactory.CreatePayInit();
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, _settings.AccountId);
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.Amount, (invoice.Total * 100).ToString("##"));
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.Currency, "CHF");
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.Description, "Gidor");
@@ -140,7 +142,7 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.SuccessLink, GetWebsiteUrl(SaferPayConstants.Api.SuccessMethodName, invoice.Key, payment.Key));
 
 			// todo: get them settings
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.NotifyAddress, "tobias.lopez@opten.ch");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.NotifyAddress, _settings.NotifyAddress);
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.LangId, "de");
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.ShowLanguages, "yes");
 

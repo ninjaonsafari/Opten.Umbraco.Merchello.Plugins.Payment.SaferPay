@@ -1,6 +1,7 @@
 ﻿using Merchello.Core;
 using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay;
 using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Providers;
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Extensions;
 using Opten.Umbraco.Merchello.Web.WebApi;
 using System;
 using System.Linq;
@@ -9,25 +10,20 @@ using System.Web.Http;
 using Umbraco.Core.Logging;
 using Umbraco.Web.Mvc;
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Models;
+using System.Net.Http;
+using System.Net;
+using System.Text;
 
 namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 {
 	[PluginController("v1")]
 	public class ResponseApiController : CommerceApiController
 	{
-		/// <summary>
-		/// Merchello context
-		/// </summary>
 		private readonly IMerchelloContext _merchelloContext;
-
-		/// <summary>
-		/// The PayPal payment processor.
-		/// </summary>
 		private readonly SaferPayPaymentProcessor _processor;
+		private readonly SaferPayProcessorSettings _settings;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="PayPalApiController"/> class.
-		/// </summary>
 		public ResponseApiController() : this(MerchelloContext.Current) {}
 
 		/// <summary>
@@ -51,11 +47,12 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 			}
 
 			_merchelloContext = merchelloContext;
-			_processor = new SaferPayPaymentProcessor();
+			_settings = provider.ExtendedData.GetSaferPayProcessorSettings();
+			_processor = new SaferPayPaymentProcessor(_settings);
 		}
 
 		[ActionName(SaferPayConstants.Api.SuccessMethodName)]
-		public bool GetSuccess()
+		public HttpResponseMessage GetSuccess()
 		{
 			string dataAsXml = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Data);
 			string signatur = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Signature);
@@ -63,7 +60,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 			string paymentKey = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Payment);
 
 			if (string.IsNullOrEmpty(invoiceKey) || string.IsNullOrEmpty(paymentKey))
-				return false;
+				return ShowError(string.Format("Invalid argument exception. Arguments: invoiceKey={0}, paymentKey={1}.", invoiceKey, paymentKey));
 
 			var invoice = _merchelloContext.Services.InvoiceService.GetByKey(new Guid(invoiceKey));
 			var payment = _merchelloContext.Services.PaymentService.GetByKey(new Guid(paymentKey));
@@ -99,27 +96,25 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 			if (!captureResult.Payment.Success)
 			{
 				LogHelper.Error<ResponseApiController>("Payment is not captured.", captureResult.Payment.Exception);
-				//return ShowError(captureResult.Payment.Exception.Message);
+				return ShowError(captureResult.Payment.Exception.Message);
 			}
 
-			// ToDo: redirect to success page
-
-			return true;
+			return GetResponseMessage(_settings.ReturnUrl);
 		}
 
 		[ActionName(SaferPayConstants.Api.FailMethodName)]
-		public bool GetFail()
+		public HttpResponseMessage GetFail()
 		{
 			return HandleAbortion();
 		}
 
 		[ActionName(SaferPayConstants.Api.BackMethodName)]
-		public bool GetBack()
+		public HttpResponseMessage GetBack()
 		{
 			return HandleAbortion();
 		}
 
-		private bool HandleAbortion()
+		private HttpResponseMessage HandleAbortion()
 		{
 			string dataAsXml = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Data);
 			string signatur = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Signature);
@@ -135,14 +130,31 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 			{
 				var ex = new NullReferenceException(string.Format("Invalid argument exception. Arguments: invoiceKey={0}, paymentKey={1}", invoiceKey, paymentKey));
 				LogHelper.Error<ResponseApiController>("Payment is not authorized.", ex);
-				//return ShowError(ex.Message);
-				return false;
+				return ShowError(ex.Message);
 			}
 
 			// Delete invoice
 			invoiceService.Delete(invoice);
 
-			return true;
+			return GetResponseMessage(_settings.CancelUrl);
+		}
+
+		private HttpResponseMessage GetResponseMessage(string path)
+		{
+			var url = _processor.GetWebsiteUrl(null, Guid.Empty, Guid.Empty);
+			url += path;
+
+			var response = Request.CreateResponse(HttpStatusCode.Moved);
+			response.Headers.Location = new Uri(url);
+
+			return response;
+		}
+
+		private HttpResponseMessage ShowError(string message)
+		{
+			var resp = new HttpResponseMessage(HttpStatusCode.OK);
+			resp.Content = new StringContent("Error: " + message, Encoding.UTF8, "text/plain");
+			return resp;
 		}
 	}
 }

@@ -3,7 +3,12 @@ using Merchello.Core.Gateways;
 using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
 using Merchello.Core.Services;
+
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Models;
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Extensions;
+
 using System;
+
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
 namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Providers
@@ -12,11 +17,13 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Providers
 	public class SaferPayPaymentGatewayMethod : PaymentGatewayMethodBase
 	{
 		private readonly SaferPayPaymentProcessor _processor;
+		private readonly SaferPayProcessorSettings _settings;
 
 		public SaferPayPaymentGatewayMethod(IGatewayProviderService gatewayProviderService, IPaymentMethod paymentMethod, ExtendedDataCollection providerExtendedData)
 			: base(gatewayProviderService, paymentMethod)
 		{
-			_processor = new SaferPayPaymentProcessor();
+			_settings = providerExtendedData.GetSaferPayProcessorSettings();
+			_processor = new SaferPayPaymentProcessor(_settings);
 		}
 
 		protected override IPaymentResult PerformAuthorizePayment(global::Merchello.Core.Models.IInvoice invoice, ProcessorArgumentCollection args)

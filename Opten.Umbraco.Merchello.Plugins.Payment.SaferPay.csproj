@@ -201,6 +201,7 @@
     <Compile Include="Constants\Constants.cs" />
     <Compile Include="Constants\MessageAttributes.cs" />
     <Compile Include="Controllers\ResponseApiController.cs" />
+    <Compile Include="Extensions\ExtendedDataExtensions.cs" />
     <Compile Include="Models\SaferPayProcessorSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Providers\SaferPayPaymentGatewayMethod.cs" />
