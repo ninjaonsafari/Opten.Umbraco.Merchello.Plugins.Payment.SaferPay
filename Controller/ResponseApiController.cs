@@ -1,6 +1,4 @@
-﻿using Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Helper;
-using Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Models;
-using Opten.Umbraco.Merchello.Web.WebApi;
+﻿using Opten.Umbraco.Merchello.Web.WebApi;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -95,7 +93,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controller
 				//return ShowError(authorizeResult.Payment.Exception.Message);
 			}
 
-			_merchelloContext.Services.GatewayProviderService.ApplyPaymentToInvoice(payment.Key, invoice.Key, AppliedPaymentType.Debit, "SaferPay: capture authorized", 0);
+			//_merchelloContext.Services.GatewayProviderService.ApplyPaymentToInvoice(payment.Key, invoice.Key, AppliedPaymentType.Debit, "SaferPay: capture authorized", invoice.Total);
 
 			// The basket can be empty
 			var customerContext = new global::Merchello.Web.CustomerContext(this.UmbracoContext);

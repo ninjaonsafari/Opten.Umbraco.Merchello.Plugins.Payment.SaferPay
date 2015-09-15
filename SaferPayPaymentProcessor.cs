@@ -36,39 +36,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 
 		public string GetPostUrl(IInvoice invoice, IPayment payment)
 		{
-			MessageObject pay = messageFactory.CreatePayInit();
-			pay.SetAttribute("ACCOUNTID", "99867-94913159");
-			pay.SetAttribute("AMOUNT", "700");
-			pay.SetAttribute("CURRENCY", "CHF");
-			pay.SetAttribute("DESCRIPTION", "SWAGERSTAN");
-			pay.SetAttribute("ORDERID", "001");
-			pay.SetAttribute("FAILLINK", GetWebsiteUrl() + baseUrl + "GetFail");
-			pay.SetAttribute("BACKLINK", GetWebsiteUrl() + baseUrl + "GetBack");
-
-			pay.SetAttribute("NOTIFYADDRESS", "tobias.lopez@opten.ch");
-
-			pay.SetAttribute("LANGID", "de");
-			pay.SetAttribute("SHOWLANGUAGES", "yes");
-
-			pay.SetAttribute("SUCCESSLINK", string.Format("{0}{1}GetSuccess?inv={2}&pay={3}", GetWebsiteUrl(), baseUrl, invoice.Key, payment.Key));
-			
-
-			if (invoice != null)
-			{
-				IAddress address = invoice.GetBillingAddress();
-				pay.SetAttribute("USERNOTIFY", invoice.BillToEmail);
-				pay.SetAttribute("COMPANY", invoice.BillToCompany);
-				pay.SetAttribute("FIRSTNAME", invoice.GetBillingAddress().TrySplitFirstName());
-				pay.SetAttribute("LASTNAME", invoice.GetBillingAddress().TrySplitLastName());
-				pay.SetAttribute("STREET", invoice.BillToAddress1);
-				pay.SetAttribute("ZIP", invoice.BillToPostalCode);
-				pay.SetAttribute("CITY", invoice.BillToRegion);
-				pay.SetAttribute("COUNTRY", invoice.BillToCountryCode);
-				pay.SetAttribute("EMAIL", invoice.BillToEmail);
-				pay.SetAttribute("PHONE", invoice.BillToPhone);
-				pay.SetAttribute("DELIVERY", "no");
-			}
-			
+			MessageObject pay = GetMessage(invoice, payment);
 			string postUrl = pay.GetUrl();
 
 			if (string.IsNullOrWhiteSpace(postUrl))
@@ -133,17 +101,39 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 		{
 			payment.Authorized = true;
 			payment.Collected = true;
+
 			return new PaymentResult(Attempt<IPayment>.Succeed(payment), invoice, true);
 		}
 
 		internal IPaymentResult ProcessPayment(IInvoice invoice, IPayment payment, ProcessorArgumentCollection args)
 		{
+			MessageObject pay = GetMessage(invoice, payment);
+			string postUrl = pay.GetUrl();
+
+			if (string.IsNullOrWhiteSpace(postUrl))
+			{
+				/*ToDo: log this */
+				/* couldnt created the url */
+				//throw new Exception();
+				return new PaymentResult(Attempt<IPayment>.Fail(payment), invoice, false);
+			}
+
+			//payment.ExtendedData.SetValue("RedirectUrl", postUrl);
+
+			return new PaymentResult(Attempt<IPayment>.Succeed(payment), invoice, false);
+		}
+
+		private MessageObject GetMessage(IInvoice invoice, IPayment payment)
+		{
+			if (invoice == null || payment == null)
+				return null;
+
 			MessageObject pay = messageFactory.CreatePayInit();
 			pay.SetAttribute("ACCOUNTID", "99867-94913159");
-			pay.SetAttribute("AMOUNT", "700");
+			pay.SetAttribute("AMOUNT", (invoice.Total * 100).ToString());
 			pay.SetAttribute("CURRENCY", "CHF");
-			pay.SetAttribute("DESCRIPTION", "SWAGERSTAN");
-			pay.SetAttribute("ORDERID", "001");
+			pay.SetAttribute("DESCRIPTION", "Gidor");
+			pay.SetAttribute("ORDERID", invoice.Key.ToString());
 			pay.SetAttribute("SUCCESSLINK", GetWebsiteUrl() + baseUrl + "GetSuccess");
 			pay.SetAttribute("FAILLINK", GetWebsiteUrl() + baseUrl + "GetFail");
 			pay.SetAttribute("BACKLINK", GetWebsiteUrl() + baseUrl + "GetBack");
@@ -168,20 +158,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 				pay.SetAttribute("PHONE", invoice.BillToPhone);
 			}
 
-			string postUrl = pay.GetUrl();
-			
-
-			if (string.IsNullOrWhiteSpace(postUrl))
-			{
-				/*ToDo: log this */
-				/* couldnt created the url */
-				//throw new Exception();
-				return new PaymentResult(Attempt<IPayment>.Fail(payment), invoice, false);
-			}
-
-			//payment.ExtendedData.SetValue("RedirectUrl", postUrl);
-
-			return new PaymentResult(Attempt<IPayment>.Succeed(payment), invoice, false);
+			return pay;
 		}
 	}
 }

@@ -25,6 +25,12 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Provider
 
 		protected override IPaymentResult PerformCapturePayment(global::Merchello.Core.Models.IInvoice invoice, global::Merchello.Core.Models.IPayment payment, decimal amount, ProcessorArgumentCollection args)
 		{
+			payment.Collected = true;
+			payment.Authorized = true;
+
+			GatewayProviderService.Save(payment);
+			GatewayProviderService.ApplyPaymentToInvoice(payment.Key, invoice.Key, AppliedPaymentType.Debit, string.Format("To show promise of a {0} payment", PaymentMethod.Name), amount);
+
 			return _processor.CapturePayment(invoice, payment, amount, false);
 		}
 
@@ -32,7 +38,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Provider
 		{
 			var payment = GatewayProviderService.CreatePayment(PaymentMethodType.CreditCard, invoice.Total, PaymentMethod.Key);
 			payment.CustomerKey = invoice.CustomerKey;
-			payment.Authorized = false;
+			payment.Authorized = true;
 			payment.Collected = false;
 			payment.PaymentMethodName = "PayPal";
 			payment.ExtendedData.SetValue("CaptureAmount", captureAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
