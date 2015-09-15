@@ -144,6 +144,11 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 			{
 				get { return "pay"; }
 			}
+
+			public static string Delivery
+			{
+				get { return "DELIVERY"; }
+			}
 		}
 	}
 }

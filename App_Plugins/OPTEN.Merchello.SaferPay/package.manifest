@@ -1,0 +1,5 @@
+﻿{
+	"javascript": [
+		"~/App_Plugins/OPTEN.Merchello.SaferPay/Dialogs/opten.merchello.saferpay.controller.js?v=ASSEMBLY_VERSION"
+	]
+}

@@ -10,7 +10,7 @@ using Umbraco.Core;
 
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
-namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
+namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 {
 	public class SaferPayPaymentProcessor
 	{
@@ -46,10 +46,16 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 		/// Get the absolute base URL for this website
 		/// </summary>
 		/// <returns></returns>
-		private static string GetWebsiteUrl()
+		private static string GetWebsiteUrl(string actionName, Guid invoiceKey, Guid paymentKey)
 		{
 			var url = HttpContext.Current.Request.Url;
 			var baseUrl = String.Format("{0}://{1}{2}", url.Scheme, url.Host, url.IsDefaultPort ? "" : ":" + url.Port);
+
+			baseUrl += SaferPayConstants.Api.BaseUrl;
+			baseUrl += actionName;
+			baseUrl += string.Format("?{0}={1}", SaferPayConstants.MessageAttributes.Invoice, invoiceKey);
+			baseUrl += string.Format("&{0}={1}", SaferPayConstants.MessageAttributes.Payment, paymentKey);
+
 			return baseUrl;
 		}
 
@@ -127,25 +133,28 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.Currency, "CHF");
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.Description, "Gidor");
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.OrderId, invoice.Key.ToString());
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.SuccessLink, GetWebsiteUrl() + SaferPayConstants.Api.BaseUrl + SaferPayConstants.Api.SuccessMethodName);
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.FailLink, GetWebsiteUrl() + SaferPayConstants.Api.BaseUrl + SaferPayConstants.Api.FailMethodName);
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.BackLink, GetWebsiteUrl() + SaferPayConstants.Api.BaseUrl + SaferPayConstants.Api.BackMethodName);
 
+			// return urls
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.FailLink, GetWebsiteUrl(SaferPayConstants.Api.FailMethodName, invoice.Key, payment.Key));
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.BackLink, GetWebsiteUrl(SaferPayConstants.Api.BackMethodName, invoice.Key, payment.Key));
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.SuccessLink, GetWebsiteUrl(SaferPayConstants.Api.SuccessMethodName, invoice.Key, payment.Key));
+
+			// todo: get them settings
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.NotifyAddress, "tobias.lopez@opten.ch");
-
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.LangId, "de");
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.ShowLanguages, "yes");
 
 			if (invoice != null)
 			{
 				IAddress address = invoice.GetBillingAddress();
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Delivery, "no");
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.UserNotify, invoice.BillToEmail);
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Company, invoice.BillToCompany);
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Firstname, invoice.GetBillingAddress().TrySplitFirstName());
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Lastname, invoice.GetBillingAddress().TrySplitLastName());
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Street, invoice.BillToAddress1);
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Zip, invoice.BillToPostalCode);
-				pay.SetAttribute(SaferPayConstants.MessageAttributes.City, invoice.BillToRegion);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.City, invoice.BillToLocality);
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Country, invoice.BillToCountryCode);
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.EMail, invoice.BillToEmail);
 				pay.SetAttribute(SaferPayConstants.MessageAttributes.Phone, invoice.BillToPhone);

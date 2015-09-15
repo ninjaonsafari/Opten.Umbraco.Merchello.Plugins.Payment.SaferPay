@@ -12,9 +12,10 @@ using Umbraco.Core.Logging;
 
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
-namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Providers
+namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Providers
 {
 	[GatewayProviderActivation(SaferPayConstants.Key, SaferPayConstants.Name, SaferPayConstants.Description)]
+	[GatewayProviderEditor("SaferPay Provider Editor", "~/App_Plugins/OPTEN.Merchello.SaferPay/Dialogs/opten.merchello.saferpay.settings.html")]
 	public class SaferPayPaymentGatewayProvider : PaymentGatewayProviderBase
 	{
 		#region AvailableResources

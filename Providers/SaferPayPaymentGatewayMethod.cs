@@ -1,14 +1,14 @@
 ﻿using Merchello.Core;
+using Merchello.Core.Gateways;
 using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
 using Merchello.Core.Services;
-
 using System;
-
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
-namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Providers
+namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Providers
 {
+	[GatewayMethodUi("SaferPayPayment")]
 	public class SaferPayPaymentGatewayMethod : PaymentGatewayMethodBase
 	{
 		private readonly SaferPayPaymentProcessor _processor;

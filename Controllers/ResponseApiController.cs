@@ -1,5 +1,6 @@
 ﻿using Merchello.Core;
-using Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Providers;
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay;
+using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Providers;
 using Opten.Umbraco.Merchello.Web.WebApi;
 using System;
 using System.Linq;
@@ -109,12 +110,38 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 		[ActionName(SaferPayConstants.Api.FailMethodName)]
 		public bool GetFail()
 		{
-			return true;
+			return HandleAbortion();
 		}
 
 		[ActionName(SaferPayConstants.Api.BackMethodName)]
 		public bool GetBack()
 		{
+			return HandleAbortion();
+		}
+
+		private bool HandleAbortion()
+		{
+			string dataAsXml = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Data);
+			string signatur = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Signature);
+			string invoiceKey = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Invoice);
+			string paymentKey = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Payment);
+
+			var invoiceService = _merchelloContext.Services.InvoiceService;
+			var paymentService = _merchelloContext.Services.PaymentService;
+
+			var invoice = invoiceService.GetByKey(new Guid(invoiceKey));
+			var payment = paymentService.GetByKey(new Guid(paymentKey));
+			if (invoice == null || payment == null)
+			{
+				var ex = new NullReferenceException(string.Format("Invalid argument exception. Arguments: invoiceKey={0}, paymentKey={1}", invoiceKey, paymentKey));
+				LogHelper.Error<ResponseApiController>("Payment is not authorized.", ex);
+				//return ShowError(ex.Message);
+				return false;
+			}
+
+			// Delete invoice
+			invoiceService.Delete(invoice);
+
 			return true;
 		}
 	}
