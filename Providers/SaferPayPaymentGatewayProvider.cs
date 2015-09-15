@@ -2,17 +2,19 @@
 using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
 using Merchello.Core.Services;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Umbraco.Core.Cache;
 using Umbraco.Core.Logging;
 
-namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Provider
+using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
+
+namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Providers
 {
-	[GatewayProviderActivation("da27fd6f-a314-47dc-8bed-c28f011c9855", "SaferPay Payment Provider", "SaferPay Payment Provider")]
+	[GatewayProviderActivation(SaferPayConstants.Key, SaferPayConstants.Name, SaferPayConstants.Description)]
 	public class SaferPayPaymentGatewayProvider : PaymentGatewayProviderBase
 	{
 		#region AvailableResources

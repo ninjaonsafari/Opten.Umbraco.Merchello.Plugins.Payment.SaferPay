@@ -1,76 +1,65 @@
-﻿using Opten.Umbraco.Merchello.Web.WebApi;
+﻿using Merchello.Core;
+using Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Providers;
+using Opten.Umbraco.Merchello.Web.WebApi;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web;
-using System.Xml;
-using System.Xml.Linq;
-using System.Xml.Serialization;
-using Umbraco.Web.Mvc;
-using System.Diagnostics;
-using com.saferpay.Client;
-using Merchello.Core.Services;
-using Merchello.Core;
-using Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Provider;
+using System.Web.Http;
 using Umbraco.Core.Logging;
-using System.Net.Http;
+using Umbraco.Web.Mvc;
+using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
-namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controller
+namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 {
 	[PluginController("v1")]
 	public class ResponseApiController : CommerceApiController
 	{
 		/// <summary>
-        /// Merchello context
-        /// </summary>
-        private readonly IMerchelloContext _merchelloContext;
+		/// Merchello context
+		/// </summary>
+		private readonly IMerchelloContext _merchelloContext;
 
-        /// <summary>
-        /// The PayPal payment processor.
-        /// </summary>
-        private readonly SaferPayPaymentProcessor _processor;
-		
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PayPalApiController"/> class.
-        /// </summary>
-		public ResponseApiController()
-			: this(MerchelloContext.Current)
-        {
-        }
-		
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PayPalApiController"/> class.
-        /// </summary>
-        /// <param name="merchelloContext">
-        /// The <see cref="IMerchelloContext"/>.
-        /// </param>
-        public ResponseApiController(IMerchelloContext merchelloContext)
-        {
-            if (merchelloContext == null) throw new ArgumentNullException("merchelloContext");
+		/// <summary>
+		/// The PayPal payment processor.
+		/// </summary>
+		private readonly SaferPayPaymentProcessor _processor;
 
-			var providerKey = new Guid("da27fd6f-a314-47dc-8bed-c28f011c9855");
-            var provider = (SaferPayPaymentGatewayProvider)merchelloContext.Gateways.Payment.GetProviderByKey(providerKey);
+		/// <summary>
+		/// Initializes a new instance of the <see cref="PayPalApiController"/> class.
+		/// </summary>
+		public ResponseApiController() : this(MerchelloContext.Current) {}
 
-            if (provider  == null)
-            {
-                var ex = new NullReferenceException("The PayPalPaymentGatewayProvider could not be resolved.  The provider must be activiated");
+		/// <summary>
+		/// Initializes a new instance of the <see cref="PayPalApiController"/> class.
+		/// </summary>
+		/// <param name="merchelloContext">
+		/// The <see cref="IMerchelloContext"/>.
+		/// </param>
+		public ResponseApiController(IMerchelloContext merchelloContext)
+		{
+			if (merchelloContext == null) throw new ArgumentNullException("merchelloContext");
+
+			var providerKey = new Guid(SaferPayConstants.Key);
+			var provider = (SaferPayPaymentGatewayProvider)merchelloContext.Gateways.Payment.GetProviderByKey(providerKey);
+
+			if (provider == null)
+			{
+				var ex = new NullReferenceException("The PayPalPaymentGatewayProvider could not be resolved.  The provider must be activiated");
 				LogHelper.Error<ResponseApiController>("PayPalPaymentGatewayProvider not activated.", ex);
-                throw ex;
-            }
+				throw ex;
+			}
 
-            _merchelloContext = merchelloContext;
-            _processor = new SaferPayPaymentProcessor();
-        }
+			_merchelloContext = merchelloContext;
+			_processor = new SaferPayPaymentProcessor();
+		}
 
+		[ActionName(SaferPayConstants.Api.SuccessMethodName)]
 		public bool GetSuccess()
 		{
-			string dataAsXml = HttpContext.Current.Request.QueryString.Get("DATA");
-			string signatur = HttpContext.Current.Request.QueryString.Get("SIGNATURE");
-			string invoiceKey = HttpContext.Current.Request.QueryString.Get("inv");
-			string paymentKey = HttpContext.Current.Request.QueryString.Get("pay");
+			string dataAsXml = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Data);
+			string signatur = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Signature);
+			string invoiceKey = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Invoice);
+			string paymentKey = HttpContext.Current.Request.QueryString.Get(SaferPayConstants.MessageAttributes.Payment);
 
 			if (string.IsNullOrEmpty(invoiceKey) || string.IsNullOrEmpty(paymentKey))
 				return false;
@@ -78,7 +67,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controller
 			var invoice = _merchelloContext.Services.InvoiceService.GetByKey(new Guid(invoiceKey));
 			var payment = _merchelloContext.Services.PaymentService.GetByKey(new Guid(paymentKey));
 
-			var providerKeyGuid = new Guid("da27fd6f-a314-47dc-8bed-c28f011c9855");
+			var providerKeyGuid = new Guid(SaferPayConstants.Key);
 			var paymentGatewayMethod = _merchelloContext.Gateways.Payment
 				.GetPaymentGatewayMethods()
 				.First(item => item.PaymentMethod.ProviderKey == providerKeyGuid);
@@ -117,11 +106,13 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controller
 			return true;
 		}
 
+		[ActionName(SaferPayConstants.Api.FailMethodName)]
 		public bool GetFail()
 		{
 			return true;
 		}
 
+		[ActionName(SaferPayConstants.Api.BackMethodName)]
 		public bool GetBack()
 		{
 			return true;

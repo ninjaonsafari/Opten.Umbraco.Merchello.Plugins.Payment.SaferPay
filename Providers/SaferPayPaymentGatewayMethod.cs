@@ -2,22 +2,23 @@
 using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
 using Merchello.Core.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Provider
+using System;
+
+using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
+
+namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Providers
 {
 	public class SaferPayPaymentGatewayMethod : PaymentGatewayMethodBase
 	{
 		private readonly SaferPayPaymentProcessor _processor;
-		public SaferPayPaymentGatewayMethod(IGatewayProviderService gatewayProviderService, IPaymentMethod paymentMethod, ExtendedDataCollection providerExtendedData) 
-            : base(gatewayProviderService, paymentMethod)
-        {
+
+		public SaferPayPaymentGatewayMethod(IGatewayProviderService gatewayProviderService, IPaymentMethod paymentMethod, ExtendedDataCollection providerExtendedData)
+			: base(gatewayProviderService, paymentMethod)
+		{
 			_processor = new SaferPayPaymentProcessor();
-        }
+		}
+
 		protected override IPaymentResult PerformAuthorizePayment(global::Merchello.Core.Models.IInvoice invoice, ProcessorArgumentCollection args)
 		{
 			return InitializePayment(invoice, args, -1);
@@ -40,7 +41,7 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Provider
 			payment.CustomerKey = invoice.CustomerKey;
 			payment.Authorized = true;
 			payment.Collected = false;
-			payment.PaymentMethodName = "PayPal";
+			payment.PaymentMethodName = SaferPayConstants.Name;
 			payment.ExtendedData.SetValue("CaptureAmount", captureAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
 			GatewayProviderService.Save(payment);
 

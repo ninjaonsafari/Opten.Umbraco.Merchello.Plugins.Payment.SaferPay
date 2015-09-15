@@ -1,32 +1,25 @@
 ﻿using com.saferpay.Client;
-using Merchello.Core;
+
 using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
-using Merchello.Core.Services;
-using Merchello.Web;
-using Opten.Umbraco.Merchello.Web.Models.Checkout;
+
 using System;
 using System.Web;
+
 using Umbraco.Core;
-using Umbraco.Web.Models;
+
+using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
 namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 {
 	public class SaferPayPaymentProcessor
 	{
-		private string baseUrl = "/umbraco/v1/ResponseApi/";
-		private string configFile = @"C:\Program Files\Saferpay\Client\";
 		public MessageFactory messageFactory;
 
 		public SaferPayPaymentProcessor(string configPath = null)
 		{
-			if (string.IsNullOrWhiteSpace(configPath) == false)
-			{
-				this.configFile = configPath;
-			}
-
 			messageFactory = new MessageFactory();
-			messageFactory.Open(configFile);
+			messageFactory.Open(SaferPayConstants.Config);
 		}
 
 		public MessageObject VerifyResponse(string data, string signature)
@@ -71,8 +64,8 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 		public IPaymentResult AuthorizePayment(IInvoice invoice, IPayment payment, string signature, string data)
 		{
 			MessageObject messageObject = VerifyResponse(data, signature);
-			var id = messageObject.GetAttribute("ID");
-			var token = messageObject.GetAttribute("TOKEN");
+			var id = messageObject.GetAttribute(SaferPayConstants.MessageAttributes.Id);
+			var token = messageObject.GetAttribute(SaferPayConstants.MessageAttributes.Token);
 
 			if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(token))
 			{
@@ -80,14 +73,14 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 			}
 
 			// save this values to payment
-			payment.ExtendedData.SetValue("ID", id);
-			payment.ExtendedData.SetValue("TOKEN", id);
+			payment.ExtendedData.SetValue(SaferPayConstants.MessageAttributes.Id, id);
+			payment.ExtendedData.SetValue(SaferPayConstants.MessageAttributes.Token, id);
 
 			// Complete order for saferpay
-			MessageObject payComplete = messageFactory.CreateRequest("PayComplete");
-			payComplete.SetAttribute("ACCOUNTID", "99867-94913159");
-			payComplete.SetAttribute("ID", id);
-			payComplete.SetAttribute("TOKEN", token);
+			MessageObject payComplete = messageFactory.CreateRequest(SaferPayConstants.PayCompleteKey);
+			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, "99867-94913159");
+			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.Id, id);
+			payComplete.SetAttribute(SaferPayConstants.MessageAttributes.Token, token);
 			MessageObject payCompleteResult = payComplete.Capture();
 
 			// authorize in merchello
@@ -129,33 +122,33 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay
 				return null;
 
 			MessageObject pay = messageFactory.CreatePayInit();
-			pay.SetAttribute("ACCOUNTID", "99867-94913159");
-			pay.SetAttribute("AMOUNT", (invoice.Total * 100).ToString());
-			pay.SetAttribute("CURRENCY", "CHF");
-			pay.SetAttribute("DESCRIPTION", "Gidor");
-			pay.SetAttribute("ORDERID", invoice.Key.ToString());
-			pay.SetAttribute("SUCCESSLINK", GetWebsiteUrl() + baseUrl + "GetSuccess");
-			pay.SetAttribute("FAILLINK", GetWebsiteUrl() + baseUrl + "GetFail");
-			pay.SetAttribute("BACKLINK", GetWebsiteUrl() + baseUrl + "GetBack");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, "99867-94913159");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.Amount, (invoice.Total * 100).ToString("##"));
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.Currency, "CHF");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.Description, "Gidor");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.OrderId, invoice.Key.ToString());
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.SuccessLink, GetWebsiteUrl() + SaferPayConstants.Api.BaseUrl + SaferPayConstants.Api.SuccessMethodName);
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.FailLink, GetWebsiteUrl() + SaferPayConstants.Api.BaseUrl + SaferPayConstants.Api.FailMethodName);
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.BackLink, GetWebsiteUrl() + SaferPayConstants.Api.BaseUrl + SaferPayConstants.Api.BackMethodName);
 
-			pay.SetAttribute("NOTIFYADDRESS", "tobias.lopez@opten.ch");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.NotifyAddress, "tobias.lopez@opten.ch");
 
-			pay.SetAttribute("LANGID", "de");
-			pay.SetAttribute("SHOWLANGUAGES", "yes");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.LangId, "de");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.ShowLanguages, "yes");
 
 			if (invoice != null)
 			{
 				IAddress address = invoice.GetBillingAddress();
-				pay.SetAttribute("USERNOTIFY", invoice.BillToEmail);
-				pay.SetAttribute("COMPANY", invoice.BillToCompany);
-				pay.SetAttribute("FIRSTNAME", invoice.GetBillingAddress().TrySplitFirstName());
-				pay.SetAttribute("LASTNAME", invoice.GetBillingAddress().TrySplitLastName());
-				pay.SetAttribute("STREET", invoice.BillToAddress1);
-				pay.SetAttribute("ZIP", invoice.BillToPostalCode);
-				pay.SetAttribute("CITY", invoice.BillToRegion);
-				pay.SetAttribute("COUNTRY", invoice.BillToCountryCode);
-				pay.SetAttribute("EMAIL", invoice.BillToEmail);
-				pay.SetAttribute("PHONE", invoice.BillToPhone);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.UserNotify, invoice.BillToEmail);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Company, invoice.BillToCompany);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Firstname, invoice.GetBillingAddress().TrySplitFirstName());
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Lastname, invoice.GetBillingAddress().TrySplitLastName());
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Street, invoice.BillToAddress1);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Zip, invoice.BillToPostalCode);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.City, invoice.BillToRegion);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Country, invoice.BillToCountryCode);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.EMail, invoice.BillToEmail);
+				pay.SetAttribute(SaferPayConstants.MessageAttributes.Phone, invoice.BillToPhone);
 			}
 
 			return pay;

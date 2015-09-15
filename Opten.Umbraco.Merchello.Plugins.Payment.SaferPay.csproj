@@ -197,10 +197,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controller\ResponseApiController.cs" />
+    <Compile Include="Constants\Api.cs" />
+    <Compile Include="Constants\Constants.cs" />
+    <Compile Include="Constants\MessageAttributes.cs" />
+    <Compile Include="Controllers\ResponseApiController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Provider\SaferPayPaymentGatewayMethod.cs" />
-    <Compile Include="Provider\SaferPayPaymentGatewayProvider.cs" />
+    <Compile Include="Providers\SaferPayPaymentGatewayMethod.cs" />
+    <Compile Include="Providers\SaferPayPaymentGatewayProvider.cs" />
     <Compile Include="SaferPayPaymentProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
