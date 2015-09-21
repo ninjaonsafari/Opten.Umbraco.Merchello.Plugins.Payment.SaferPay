@@ -1,10 +1,16 @@
 ﻿<div class="umb-panel merchello-side-panel" data-ng-controller="Merchello.Plugin.GatewayProviders.Dialogs.SaferPaySettingsController as gatewayProvider">
 
 	<div class="umb-modalcolumn-header">
-		<h4><strong>Tax and Rounding Provider Configuration</strong></h4>
+		<h4><strong>SaferPay Einstellungen</strong></h4>
 	</div>
 	<form name="editProviderForm" id="editProviderForm">
 		<div class="umb-panel-body with-header with-footer">
+			<div class="control-group row-fluid">
+				<p>Beschreibung<br /></p>
+				<div class="input-prepend col-xs-12 span12">
+					<input class="col-xs-8 span8" type="text" data-ng-model="gatewayProvider.settings.description">
+				</div>
+			</div>
 			<div class="control-group row-fluid">
 				<p>AccountID<br /></p>
 				<div class="input-prepend col-xs-12 span12">

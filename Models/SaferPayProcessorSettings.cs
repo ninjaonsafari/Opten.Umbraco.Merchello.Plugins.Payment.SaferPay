@@ -15,5 +15,8 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Models
 
 		[JsonProperty("cancelUrl")]
 		public string CancelUrl { get; set; }
+
+		[JsonProperty("description")]
+		public string Desciption { get; set; }
 	}
 }

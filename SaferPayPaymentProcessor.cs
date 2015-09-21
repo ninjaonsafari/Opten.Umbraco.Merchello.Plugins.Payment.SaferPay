@@ -5,8 +5,10 @@ using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Models;
 using System;
 using System.Diagnostics;
 using System.Web;
+using umbraco.cms.businesslogic.web;
 using Umbraco.Core;
 using Umbraco.Core.Logging;
+using Umbraco.Web;
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
 namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
@@ -137,12 +139,12 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 		{
 			if (invoice == null || payment == null)
 				return null;
-
+			
 			MessageObject pay = _messageFactory.CreatePayInit();
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.AccountId, _settings.AccountId);
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.Amount, (invoice.Total * 100).ToString("##"));
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.Currency, "CHF");
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.Description, "Gidor");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.Currency, invoice.Currency().CurrencyCode);
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.Description, _settings.Desciption);
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.OrderId, invoice.Key.ToString());
 
 			// return urls
@@ -152,7 +154,7 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 
 			// todo: get them settings
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.NotifyAddress, _settings.NotifyAddress);
-			pay.SetAttribute(SaferPayConstants.MessageAttributes.LangId, "de");
+			pay.SetAttribute(SaferPayConstants.MessageAttributes.LangId, System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName);
 			pay.SetAttribute(SaferPayConstants.MessageAttributes.ShowLanguages, "yes");
 
 			if (invoice != null)
