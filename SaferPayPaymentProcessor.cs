@@ -3,8 +3,10 @@ using Merchello.Core.Gateways.Payment;
 using Merchello.Core.Models;
 using Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Models;
 using System;
+using System.Diagnostics;
 using System.Web;
 using Umbraco.Core;
+using Umbraco.Core.Logging;
 using SaferPayConstants = Opten.Umbraco.Merchello.Plugins.Payment.SaferPay.Constants;
 
 namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
@@ -51,12 +53,19 @@ namespace Opten.Umbraco.Merchello.Plugins.Payment.SaferPay
 			var baseUrl = String.Format("{0}://{1}{2}", url.Scheme, url.Host, url.IsDefaultPort ? "" : ":" + url.Port);
 
 			if (string.IsNullOrEmpty(actionName) || invoiceKey.Equals(Guid.Empty) || paymentKey.Equals(Guid.Empty))
+			{
+				LogHelper.Error<SaferPayPaymentProcessor>(string.Format("Couldn't generate the url for {0} paymentKey: {1} invoiceKey: {2}", actionName, paymentKey, invoiceKey), null);
 				return baseUrl;
+			}
+				
 
 			baseUrl += SaferPayConstants.Api.BaseUrl;
 			baseUrl += actionName;
 			baseUrl += string.Format("?{0}={1}", SaferPayConstants.MessageAttributes.Invoice, invoiceKey);
 			baseUrl += string.Format("&{0}={1}", SaferPayConstants.MessageAttributes.Payment, paymentKey);
+
+			Debug.WriteLine("Generated Url" + baseUrl);
+			LogHelper.Info<SaferPayPaymentProcessor>(string.Format("Generated Url: {0}", baseUrl));
 
 			return baseUrl;
 		}

@@ -91,6 +91,8 @@ namespace Opten.Umbraco.Merchello.Web.Gateways.Payment.SaferPay.Controllers
 				basket.Empty();
 			}
 
+			customerContext.SetValue("invoiceKey", invoiceKey);
+
 			// Capture
 			var captureResult = paymentGatewayMethod.CapturePayment(invoice, payment, payment.Amount, null);
 			if (!captureResult.Payment.Success)
